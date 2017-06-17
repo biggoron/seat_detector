@@ -17,7 +17,6 @@ def main(
   min_size=150, # Min dimension of humans. The given number is width + height.
 ):
 
-
   # ------ Choose between live or video file -----------
   ap = argparse.ArgumentParser()
   ap.add_argument("-v", "--video", help="path to the video file")
@@ -39,8 +38,7 @@ def main(
   printer = PrintMng()
 
   # DNN Human Recognizer
-  # FIXME: retrain the DNN with close-ups on humans and zooms in scenes
-  recognizer = hr.HumanRecognizer("model/person_recognizer.pb", "model/recognizer_labels.txt")
+  recognizer = hr.HumanRecognizer("model/graph_zoom.pb", "model/labels_zoom.txt")
 
   # Background substractor
   fgbg = cv2.createBackgroundSubtractorMOG2()
@@ -53,7 +51,8 @@ def main(
   boxes = BoxMem(recognizer, max_size=max_size, min_size=min_size)
 
   # Memory for tracking the seats
-  seats = SeatMem(seat_nb = 2)
+  seats = SeatMem(seat_nb = 2, decay = 0.1) # seat_nb is the expected number of seats
+  seat_list = []
 
   # Initialize the time counter for seat long memory update
   last_access = None
@@ -85,28 +84,47 @@ def main(
     # Get the list of box that could contain humans
     box_list = boxes.get()
 
-    # DEBUG
+    # USED FOR DEBUGGING
     # Print the boxes on the current frame for debugging
     for b in box_list:
       x, y, w, h = b[0].coord()
-      cv2.rectangle(frame, (x-15, y-15), (x+w+15, y+h+15), (255, 255, 255), 2)
+      cropped = frame[x:x+w, y:y+h]
+      #human = recognizer.is_human(image=cropped)
+      color = (255, 255, 255)
+      cv2.rectangle(frame, (x-15, y-15), (x+w+15, y+h+15), color, 2)
 
     # Updates the potential seats with the detected boxes.
     seats.feed(box_list)
 
     # Updates the detected seats with the potential seats.
-    mem_span = 10 #seconds
+    # mem_span is the time seated after which the seating place is considered a seat.
+    mem_span = 45 #seconds
     if last_access == None:
       last_access = time.time()
       
-    if time.time() - last_access > mem_span / 3:
+    if ((time.time() - last_access) > (mem_span / 3)):
       seats.short_to_long_mem(trigger_on = mem_span)
       # Get the most probable seats
-      # TODO should execute only when I want to see where the seats are.
-      seats.get()
+      # NOTICE: should be run only when one wants to see the seat list
+      seat_list = seats.get()
+        
       # TODO apply DNN to check the seats
-      # TODO if there is someone in a seat declare it as a box and blacken the corresponding area after BG extraction.
+      # maybe if there is someone in a seat declare it as a box and blacken the corresponding area after BG extraction.
+
+      # memorize the time
       last_access = time.time()
+
+    # USED FOR DEBUGGING
+    # prints in yellow the seats
+
+    for s in seat_list:
+      x, y, w, h = s[1].coord()
+      cropped = frame[x:x+w, y:y+h]
+      #if recognizer.is_human(image=cropped):
+      color = (0, 255, 255)
+      #else:
+      #color = (255, 0, 255)
+      cv2.rectangle(frame, (x, y), (x+w, y+h), color, 2)
 
     # DEBUG
     # Display the frame
@@ -122,4 +140,4 @@ def main(
   recognizer.close()
   camera.release()
 
-main(max_size=650, min_size=300)
+main(max_size=370, min_size=180)

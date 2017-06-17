@@ -21,6 +21,8 @@ class Box:
     if d >= c:
       return 0
     return (b-a)*(c-d)
+  def area(self):
+    return w*w + h*h
   def dist(self, box):
     # distance between the centers of self and box
     dx = abs((self.x + self.w / 2) - (box.x + box.w / 2))
@@ -43,10 +45,10 @@ class Box:
     y_list = [box.y for box in box_list]
     w_list = [box.w for box in box_list]
     h_list = [box.h for box in box_list]
-    x_avg = sum(x_list) / len(x_list)
-    y_avg = sum(y_list) / len(y_list)
-    w_avg = sum(w_list) / len(w_list)
-    h_avg = sum(h_list) / len(h_list)
+    x_avg = sum(x_list) // len(x_list)
+    y_avg = sum(y_list) // len(y_list)
+    w_avg = sum(w_list) // len(w_list)
+    h_avg = sum(h_list) // len(h_list)
     return Box(x_avg, y_avg, w_avg, h_avg)
     
   def coord(self):
@@ -57,7 +59,7 @@ class BoxMem:
   # Keeps track of boxes which are the size of a human.
   # Boxes have weights to keep track of their likeliness
   # of being a human.
-  def __init__(self, recognizer, max_size=650, min_size=250, init_w=3, del_lim=0, max_w=5, decay=1, max_id=50):
+  def __init__(self, recognizer, max_size=650, min_size=250, init_w=3, del_lim=0, max_w=6, decay=0.5, max_id=50):
     self.init_w = init_w # Initial weight
     self.del_lim = del_lim # delete boxes with weight below limit.
     self.max_size = max_size # max size of a human (width + height)
@@ -143,28 +145,27 @@ class BoxMem:
         # draw it in red
         # cv2.rectangle(frame, (b.x, b.y), (b.x+b.w, b.y+b.h), (0, 0, 255), 2)
         # Check is there are learned boxes within
-        candidates = [c for c in self.boxes if b.shared_area(c[0]) > 0.7 * c[0].w * c[0].h]
+        candidates = [c for c in self.boxes if b.shared_area(c[0]) > 0.5 * c[0].w * c[0].h]
         for c in candidates:
           # reinforce the weight of those learned boxes
           i = self.boxes.index(c)
           self.boxes[i][1] = 5
     for b in self.boxes:
       sub_im = frame[b[0].y : (b[0].y+b[0].h), b[0].x:b[0].x+b[0].w]
-      #if self.recognizer.is_human(image=sub_im):
-      #  b[1] = self.max_w
-      #else:
-
-      # Forget a little each learned box
-      b[1] -= self.decay
-      # If the weight is too high, set it to the max
-      if b[1] > self.max_w:
+      if ((b[1] < self.del_lim + 2*self.decay) and self.recognizer.is_human(image=sub_im)):
         b[1] = self.max_w
-      if b[1] < self.del_lim:
-        # If the weight is too small, delete the learned box
-        # TODO: should check if there is human in it before throwing it
-        i = self.boxes.index(b)
-        self.remove_box(i)
+      else:
+        # Forget a little each learned box
+        b[1] -= self.decay
+        # If the weight is too high, set it to the max
+        if b[1] > self.max_w:
+          b[1] = self.max_w
+        if b[1] < self.del_lim:
+          # If the weight is too small, delete the learned box
+          # TODO: should check if there is human in it before throwing it
+          i = self.boxes.index(b)
+          self.remove_box(i)
 
   def get(self):
     # returns the learned boxes
-    return [[b[0], b[2]] for b in self.boxes if b[1] > self.del_lim + 1]
+    return [[b[0], b[2]] for b in self.boxes]

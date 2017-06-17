@@ -5,6 +5,7 @@ def blur(img, fgbg, blur_kernel, denoise_kernel):
   # Sequence of processing to remove useless information on the picture
   # Removes colors
   t = time.time()
+  # TODO: try switch grey and fgbg
   grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
   # Removes background, put forground in white
   fgmask = fgbg.apply(grey)

@@ -233,14 +233,14 @@ class HumanRecognizer:
 
     def is_human(self, image_path=None, image=None):
       # Boolean, is the picture human
-        feed_dict = self._create_feed_dict(image_path=image_path, image=image)
-        pred = self.session.run(self.y_pred, feed_dict=feed_dict)
-        pred = np.squeeze(pred)
-        score = pred[0]
-        if score > 0.5:
-          return True
-        else:
-          return False
+      feed_dict = self._create_feed_dict(image_path=image_path, image=image)
+      pred = self.session.run(self.y_pred, feed_dict=feed_dict)
+      pred = np.squeeze(pred)
+      score = pred[0]
+      if score > 0.4:
+        return True
+      else:
+        return False
 
     def get_resized_image(self, image_path=None, image=None):
         """
@@ -378,7 +378,7 @@ if __name__ == '__main__':
     print(tf.__version__)
 
     # Load the Inception model so it is ready for classifying images.
-    model = HumanRecognizer("model/person_recognizer.pb", "model/recognizer_labels.txt")
+    model = HumanRecognizer("model/graph_zoom.pb", "model/labels_zoom.txt")
 
     # Path for a jpeg-image that is included in the downloaded data.
     image_paths = ["data/example1.jpeg", "data/example2.jpeg", "data/example3.jpeg", "data/example4.jpeg", "data/example5.jpeg", "data/example6.jpeg"]
