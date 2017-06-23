@@ -115,7 +115,7 @@ class SeatMem:
           # Update the weight TODO put these in function parameter
           low_w_mul = 0.2 # The multiplicator when the weight is low.
           acc = 0.5
-          inc = 1 # Controls the part when the weight grows fast.
+          inc = 0.5 # Controls the part when the weight grows fast.
           fade = 0.05 # Controls the part when the weight grows slowly again
 
           self.long_mem[i][1] += (low_w_mul + inc * x**2)/(1 + fade * x**3)
@@ -135,7 +135,8 @@ class SeatMem:
         for i, s in self.long_mem.items():
           # TODO: alter weight reinforment if there is a human in it
           # Decrease weight according to number of boxes
-          self.long_mem[i][1] -= self.decay * static_counter / self.seat_nb
+          force_decay = 1.1 # should be 1 in production, accelerate decay to test rapidly
+          self.long_mem[i][1] -= force_decay * self.decay * static_counter / self.seat_nb
           # Cap weights
           self.long_mem[i][1] = min(s[1], self.max_w)
           print("  seat %i has weight %f" % (i, self.long_mem[i][1]))
@@ -158,8 +159,9 @@ class SeatMem:
     # Properly removes a seat (deleting its id too)
     print("deleting %i" % i )
     print(str(self.long_mem.items()))
-    self.long_mem.pop(i)
-    self.seat_ids[i] = False
+    if i in long_mem.keys():
+      self.long_mem.pop(i)
+      self.seat_ids[i] = False
     
   def get(self, seat_nb=None):
     if seat_nb == None:

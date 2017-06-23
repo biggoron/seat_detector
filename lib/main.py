@@ -98,7 +98,7 @@ def main(
 
     # Updates the detected seats with the potential seats.
     # mem_span is the time seated after which the seating place is considered a seat.
-    mem_span = 45 #seconds
+    mem_span = 60 #seconds
     if last_access == None:
       last_access = time.time()
       
@@ -140,4 +140,4 @@ def main(
   recognizer.close()
   camera.release()
 
-main(max_size=370, min_size=180)
+main(max_size=330, min_size=180)
